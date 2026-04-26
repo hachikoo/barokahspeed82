@@ -40,16 +40,21 @@ Route::get('/dashboard', [DashboardController::class, 'index']);
 
 // ================= SPAREPART =================
 Route::prefix('master/sparepart')->name('sparepart.')->group(function () {
+
+    Route::get('/', [SparepartController::class, 'index'])->name('index');
+
     Route::get('/get-data', [SparepartController::class, 'getData'])->name('get-data');
     Route::get('/generate-code', [SparepartController::class, 'generateCode'])->name('generate-code');
-    Route::get('/low-stock', [SparepartController::class, 'getLowStock'])->name('low-stock');
+    Route::get('/low-stock', [SparepartController::class, 'getLowStock'])->name('get-low-stock');
+
+    Route::post('/store', [SparepartController::class, 'store'])->name('store');
+    Route::put('/update/{id}', [SparepartController::class, 'update'])->name('update');
+    Route::delete('/delete/{id}', [SparepartController::class, 'destroy'])->name('destroy');
 
     Route::post('/mutasi', [SparepartController::class, 'mutasiStok'])->name('mutasi');
     Route::post('/tambah-stok', [SparepartController::class, 'tambahStok'])->name('tambah-stok');
     Route::post('/toggle-status/{id}', [SparepartController::class, 'toggleStatus'])->name('toggle-status');
 });
-Route::resource('master/sparepart', SparepartController::class)->names('sparepart')->except('show');
-
 
 // ================= UNIT =================
 Route::prefix('master/unit')->name('unit.')->group(function () {

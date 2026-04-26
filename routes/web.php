@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\{
     DashboardController,
@@ -14,137 +13,164 @@ use App\Http\Controllers\{
     LaporanController
 };
 
-
-Route::get('/cek-db', function () {
-    try {
-        return DB::connection()->getDatabaseName();
-    } catch (\Exception $e) {
-        return $e->getMessage();
-    }
-});
 /*
 |--------------------------------------------------------------------------
-| Dashboard
+| Web Routes - Barokah Speed System
 |--------------------------------------------------------------------------
 */
 
+// --- DASHBOARD ---
 Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 Route::get('/dashboard', [DashboardController::class, 'index']);
 
 
-/*
-|--------------------------------------------------------------------------
-| MASTER DATA
-|--------------------------------------------------------------------------
-*/
+// --- MODUL MASTER DATA ---
 
-// ================= SPAREPART =================
 Route::prefix('master/sparepart')->name('sparepart.')->group(function () {
-
-    Route::get('/', [SparepartController::class, 'index'])->name('index');
-
     Route::get('/get-data', [SparepartController::class, 'getData'])->name('get-data');
     Route::get('/generate-code', [SparepartController::class, 'generateCode'])->name('generate-code');
     Route::get('/low-stock', [SparepartController::class, 'getLowStock'])->name('get-low-stock');
 
-    Route::post('/store', [SparepartController::class, 'store'])->name('store');
-    Route::put('/update/{id}', [SparepartController::class, 'update'])->name('update');
-    Route::delete('/delete/{id}', [SparepartController::class, 'destroy'])->name('destroy');
-
     Route::post('/mutasi', [SparepartController::class, 'mutasiStok'])->name('mutasi');
+
+    // Cukup pakai satu ini saja Bos
     Route::post('/tambah-stok', [SparepartController::class, 'tambahStok'])->name('tambah-stok');
-    Route::post('/toggle-status/{id}', [SparepartController::class, 'toggleStatus'])->name('toggle-status');
-});
-
-// ================= UNIT =================
-Route::prefix('master/unit')->name('unit.')->group(function () {
-    Route::get('/', [UnitController::class, 'index'])->name('index');
-    Route::get('/get-data', [UnitController::class, 'getData'])->name('get-data');
-    Route::post('/store', [UnitController::class, 'store'])->name('store');
-    Route::put('/{id}', [UnitController::class, 'update'])->name('update');
-    Route::delete('/{id}', [UnitController::class, 'destroy'])->name('destroy');
-
-    Route::post('/simpan-cepat', [UnitController::class, 'simpanCepat'])->name('simpan-cepat');
-    Route::post('/store-ajax', [UnitController::class, 'storeUnitAjax'])->name('store-ajax');
 });
 
 
-// ================= KONSUMEN =================
+
+Route::post('/sparepart/toggle-status/{id}', [SparepartController::class, 'toggleStatus'])->name('sparepart.toggle-status');
+
+Route::resource('master/sparepart', SparepartController::class)->names('sparepart')->except(['show']);
+
+// 2. UNIT MOTOR
+Route::prefix('master/unit')->group(function () {
+    Route::get('/', [UnitController::class, 'index'])->name('unit.index');
+    Route::get('/get-data', [UnitController::class, 'getData'])->name('unit.get-data');
+    Route::post('/store', [UnitController::class, 'store'])->name('unit.store');
+
+    // Taruh yang menggunakan {id} di bawah
+    Route::put('/{id}', [UnitController::class, 'update'])->name('unit.update');
+    Route::delete('/{id}', [UnitController::class, 'destroy'])->name('unit.destroy');
+});
+
+
+
+// 3. KONSUMEN & RIWAYAT
 Route::prefix('master/konsumen')->name('konsumen.')->group(function () {
     Route::get('/', [KonsumenController::class, 'index'])->name('index');
     Route::get('/get-data', [KonsumenController::class, 'getData'])->name('get-data');
-    Route::post('/store', [KonsumenController::class, 'store'])->name('store');
+    Route::post('/store', [KonsumenController::class, 'store'])->name('store'); // URL menjadi: master/konsumen/store
     Route::put('/update/{id}', [KonsumenController::class, 'update'])->name('update');
-    Route::delete('/delete/{id}', [KonsumenController::class, 'destroy'])->name('destroy');
 
     Route::get('/riwayat-kendaraan/{kendaraan_id}', [KonsumenController::class, 'getRiwayatKendaraan'])->name('riwayat-kendaraan');
+
+    Route::delete('/delete/{id}', [KonsumenController::class, 'destroy'])->name('destroy');
 });
+
+
 Route::resource('master/konsumen', KonsumenController::class)->names('konsumen');
 
-
-// ================= MEKANIK =================
-Route::prefix('master/mekanik')->name('mekanik.')->group(function () {
-    Route::get('/', [MekanikController::class, 'index'])->name('index');
-    Route::get('/get-data', [MekanikController::class, 'getData'])->name('get-data');
-    Route::post('/store', [MekanikController::class, 'store'])->name('store');
-    Route::put('/update/{id}', [MekanikController::class, 'update'])->name('update');
-    Route::delete('/delete/{id}', [MekanikController::class, 'destroy'])->name('destroy');
-});
+// 4. MEKANIK (Gunakan Resource agar standar)
 Route::resource('master/mekanik', MekanikController::class)->names('mekanik');
 
 
-// ================= JASA =================
-Route::prefix('master/jasa')->name('jasa.')->group(function () {
-    Route::get('/', [JasaController::class, 'index'])->name('index');
-    Route::get('/get-data', [JasaController::class, 'getData'])->name('get-data');
-    Route::post('/store', [JasaController::class, 'store'])->name('store');
-    Route::put('/update/{id}', [JasaController::class, 'update'])->name('update');
-    Route::delete('/delete/{id}', [JasaController::class, 'destroy'])->name('delete');
+
+Route::prefix('mekanik')->group(function () {
+    // Menampilkan Halaman Utama (Halaman Blade)
+    Route::get('/', [MekanikController::class, 'index'])->name('mekanik.index');
+
+    // Route khusus untuk Fetch API (Infinite Scroll & Search)
+    // URL: /mekanik/get-data
+    Route::get('/get-data', [MekanikController::class, 'getData'])->name('mekanik.get-data');
+
+    // Simpan Data Baru (URL: /mekanik/store)
+    Route::post('/store', [MekanikController::class, 'store'])->name('mekanik.store');
+
+    // Update Data (URL: /mekanik/update/{id})
+    // Menggunakan PUT agar lebih standar RESTful, atau tetap POST jika ingin simpel
+    Route::put('/update/{id}', [MekanikController::class, 'update'])->name('mekanik.update');
+
+    // Hapus/Nonaktifkan Data (URL: /mekanik/delete/{id})
+    Route::delete('/delete/{id}', [MekanikController::class, 'destroy'])->name('mekanik.destroy');
 });
+
+Route::prefix('master/jasa')->group(function () {
+    // Halaman Utama
+    Route::get('/', [JasaController::class, 'index'])->name('jasa.index');
+
+    // API untuk Fetch Data (Infinite Scroll & Search)
+    Route::get('/get-data', [JasaController::class, 'getData'])->name('jasa.get-data');
+
+    // Simpan Data Baru
+    Route::post('/store', [JasaController::class, 'store'])->name('jasa.store');
+
+    // Update Data
+    Route::put('/update/{id}', [JasaController::class, 'update'])->name('jasa.update');
+
+    // Hapus Data
+    Route::delete('/delete/{id}', [JasaController::class, 'destroy'])->name('jasa.delete');
+});
+
+// 5. JASA & KENDARAAN
 Route::resource('master/jasa', JasaController::class)->names('jasa');
-
-
-// ================= KENDARAAN =================
 Route::resource('master/kendaraan', KendaraanController::class)->names('kendaraan');
 
 
-/*
-|--------------------------------------------------------------------------
-| TRANSAKSI
-|--------------------------------------------------------------------------
-*/
+// --- MODUL TRANSAKSI ---
+// --- MODUL TRANSAKSI ---
 Route::prefix('transaksi')->name('transaksi.')->group(function () {
-
+    // Halaman Utama & Form
     Route::get('/', [TransaksiController::class, 'index'])->name('index');
     Route::get('/baru', [TransaksiController::class, 'createServis'])->name('baru');
     Route::get('/part-only', [TransaksiController::class, 'createPart'])->name('part-only');
 
-    Route::get('/search-part', [TransaksiController::class, 'searchPart'])->name('search-part');
-    Route::get('/cek-konsumen', [TransaksiController::class, 'cekKonsumen'])->name('cek-konsumen');
-    Route::get('/cek-kendaraan-lengkap/{no_polisi}', [TransaksiController::class, 'getKendaraanLengkap'])->name('cek-kendaraan-lengkap');
-    Route::get('/get-kendaraan/{konsumen_id}', [TransaksiController::class, 'getKendaraan'])->name('get-kendaraan');
+    // Fitur Ajax & API Transaksi
+    Route::controller(TransaksiController::class)->group(function () {
+        Route::get('/search-part', 'searchPart')->name('search-part');
+        Route::get('/cek-konsumen', 'cekKonsumen')->name('cek-konsumen');
 
+
+
+        // Pencarian Kendaraan (Gunakan satu rute utama untuk efisiensi script)
+        Route::get('/cek-kendaraan-lengkap/{no_polisi}', 'getKendaraanLengkap')->name('cek-kendaraan-lengkap');
+
+        // Rute opsional jika masih dibutuhkan untuk pencarian via ID Konsumen
+        Route::get('/get-kendaraan/{konsumen_id}', 'getKendaraan')->name('get-kendaraan');
+    });
+
+    // Proses Simpan & Output
     Route::post('/simpan', [TransaksiController::class, 'store'])->name('simpan');
     Route::get('/pembayaran/{id}', [TransaksiController::class, 'pembayaran'])->name('pembayaran');
     Route::get('/cetak-struk/{id}', [TransaksiController::class, 'cetakStruk'])->name('cetak');
 });
 
+Route::post('/master/unit/simpan-cepat', [UnitController::class, 'simpanCepat'])->name('master.unit.simpan-cepat');
+Route::post('/units/store-ajax', [UnitController::class, 'storeUnitAjax'])->name('units.storeAjax');
 
-/*
-|--------------------------------------------------------------------------
-| LAPORAN
-|--------------------------------------------------------------------------
-*/
+
+// Laporan Servis
+
+// Satukan semua laporan dalam satu group biar tidak bentrok
 Route::prefix('laporan')->name('laporan.')->group(function () {
 
-    Route::get('/laporan-servis', [LaporanController::class, 'index'])->name('servis');
+    // 1. Laporan Servis (Unit Masuk)
+    Route::get('/laporan-servis', [LaporanController::class, 'index'])->name('index');
     Route::get('/laporan-servis/print', [LaporanController::class, 'print'])->name('print');
 
+    // 2. Laporan Penjualan Sparepart
     Route::get('/sparepart', [LaporanController::class, 'penjualanSparepart'])->name('sparepart');
 
+    // 3. Laporan Keuangan
     Route::get('/keuangan', [LaporanController::class, 'laporanKeuangan'])->name('keuangan');
     Route::get('/keuangan/pdf', [LaporanController::class, 'exportPdf'])->name('keuangan.pdf');
 
+    // 4. Modal Detail
     Route::get('/detail-transaksi/{no_faktur}', [LaporanController::class, 'getDetailModal'])->name('detail.modal');
+
+    // 5. Riwayat Servis
     Route::get('/riwayat-servis', [LaporanController::class, 'riwayatServis'])->name('riwayat');
 });
+Route::resource('sparepart', SparepartController::class);
+Route::resource('mekanik', MekanikController::class);
+Route::resource('jasa', JasaController::class);

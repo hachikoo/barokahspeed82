@@ -365,6 +365,12 @@ function updateWaLink(summary){
         `https://wa.me/${phone}?text=${text}`
     );
 }
+const BASE_URL = window.location.origin;
+
+function api(url, params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return fetch(`${BASE_URL}${url}?${query}`);
+}
 </script>
 
 @endsection

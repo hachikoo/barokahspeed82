@@ -434,6 +434,12 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js')
         .then(() => console.log('Service Worker Registered'));
 }
+const BASE_URL = window.location.origin;
+
+function api(url, params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return fetch(`${BASE_URL}${url}?${query}`);
+}
 </script>
 
 <!-- MOBILE APP NAV -->

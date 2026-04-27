@@ -422,10 +422,7 @@ body.modal-sidebar-open .toggle-sidebar{
 
 @push('scripts')
     <script>
-document.addEventListener('DOMContentLoaded', () => {
-    fetchSpareparts();
-    fetchLowStock(); // 🔥 ini dipanggil di sini
-});
+
           document.addEventListener('DOMContentLoaded', function () {
 
     const toggleBtn =
@@ -611,6 +608,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 };
 
+const API = {
+    get: async (url) => {
+        const response = await fetch(url, {
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        return await response.json();
+    }
+};
+
         // 4. CORE FETCH DATA
         async function fetchSpareparts(append = false) {
     if (state.isLoading || (append && !state.hasMoreData)) return;
@@ -659,6 +672,10 @@ async function fetchLowStock() {
     }
 }
 
+document.addEventListener('DOMContentLoaded', () => {
+    fetchSpareparts();
+    fetchLowStock(); // 🔥 ini dipanggil di sini
+});
 
         // Tambahkan parameter totalFromServer di sini
         function renderData(data, append = false, totalFromServer = 0) {

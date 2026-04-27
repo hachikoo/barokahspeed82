@@ -421,211 +421,51 @@ body.modal-sidebar-open .toggle-sidebar{
 @endsection
 
 @push('scripts')
-    <script>
+   <script>
 
-          document.addEventListener('DOMContentLoaded', function () {
-
-    const toggleBtn =
-        document.querySelector('#sidebarToggle') ||
-        document.querySelector('.sidebar-toggle') ||
-        document.querySelector('[data-bs-target="#sidebar"]') ||
-        document.querySelector('.btn-toggle');
-
-    if (!toggleBtn) return;
-
-    const modalIds = [
-        'modalSparepart',
-        'modalMutasi',
-        'modalStokMenipis',
-        'modalTambahStokSimple'
-    ];
-
-    modalIds.forEach(id => {
-        const modal = document.getElementById(id);
-        if (!modal) return;
-
-        modal.addEventListener('show.bs.modal', function () {
-            toggleBtn.style.display = 'none';
-        });
-
-        modal.addEventListener('hidden.bs.modal', function () {
-            toggleBtn.style.display = '';
-        });
-    });
-
-});
-        // 1. STATE & GLOBAL VARIABLES
-        let state = {
-            currentPage: 1,
-            isLoading: false,
-            hasMoreData: true,
-            container: document.getElementById('sparepart-container'),
-            scrollBox: document.getElementById('scroll-container')
-        };
-
-        // 2. UTILS
-        const utils = {
-            formatRupiah: (val) => {
-                if (!val) return "0";
-                let clean = val.toString().replace(/\D/g, '');
-                return clean.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-            },
-            cleanRupiah: (val) => val.toString().replace(/\./g, ''),
-            showLoading: (show) => {
-                const el = document.getElementById('loading-state');
-                if (el) show ? el.classList.remove('d-none') : el.classList.add('d-none');
-            }
-        };
-
-        // 3. GLOBAL FUNCTIONS (Agar bisa dipanggil dari HTML onclick)
-
-        // Fungsi Tambah Baru
-        window.openAddModal = function() {
-            const form = document.getElementById('formSparepart');
-            if (form) {
-                form.reset();
-                document.getElementById('modal_id').value = '';
-                document.getElementById('modal_stok_min').value = '0'; // Default 0
-                document.getElementById('modalSparepartLabel').innerText = 'TAMBAH SPAREPART BARU';
-                document.getElementById('modal_kode_part').readOnly = true;
-
-                // Generate kode otomatis
-                generateAutoCode();
-
-                const modalEl = document.getElementById('modalSparepart');
-                bootstrap.Modal.getOrCreateInstance(modalEl).show();
-            }
-        };
-
-        async function generateAutoCode() {
-            try {
-                const res = await fetch("{{ route('sparepart.generate-code') }}?t=" + Date.now());
-                const data = await res.json();
-                const inputKode = document.getElementById('modal_kode_part');
-                if (inputKode) inputKode.value = data.new_code || data.kode;
-            } catch (e) {
-                console.error("Gagal generate kode:", e);
-            }
-        }
-
-        // Fungsi Mutasi
-        window.openMutasiModal = function(btn) {
-            try {
-                const item = JSON.parse(decodeURIComponent(btn.getAttribute('data-item')));
-                const modalEl = document.getElementById('modalMutasi');
-                if (modalEl) {
-                    document.getElementById('mutasi_sparepart_id').value = item.id;
-                    document.getElementById('label_nama_part').innerText = item.nama_part.toUpperCase();
-                    bootstrap.Modal.getOrCreateInstance(modalEl).show();
-                }
-            } catch (e) {
-                console.error("Error modal mutasi:", e);
-            }
-        };
-
-        // Fungsi Edit
-       window.prepEdit = function(btn) {
-    try {
-        const item = JSON.parse(decodeURIComponent(btn.getAttribute('data-item')));
-        document.getElementById('modal_id').value = item.id;
-        document.getElementById('modal_kode_part').value = item.kode_part;
-        document.getElementById('modal_nama_part').value = item.nama_part;
-        document.getElementById('modal_kategori').value = item.kategori;
-        document.getElementById('modal_rak').value = item.rak || '';
-        document.getElementById('modal_stok').value = item.stok;
-
-        // TAMBAHKAN INI
-        document.getElementById('modal_stok_min').value = item.stok_min || 0;
-
-        document.getElementById('modal_status').value = item.status;
-        document.getElementById('modal_harga_beli').value = utils.formatRupiah(item.harga_beli);
-        document.getElementById('modal_harga_jual').value = utils.formatRupiah(item.harga_jual);
-
-        document.getElementById('modalSparepartLabel').innerText = 'EDIT DATA SPAREPART';
-        bootstrap.Modal.getOrCreateInstance(document.getElementById('modalSparepart')).show();
-    } catch (e) {
-        console.error("Error prep edit:", e);
-    }
-};
-
-        // Fungsi Hapus
-        window.deletePart = async function(id) {
-            const confirm = await Swal.fire({
-                title: 'Hapus data?',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Ya, Hapus'
-            });
-            if (confirm.isConfirmed) {
-                const res = await fetch(`{{ url('sparepart') }}/${id}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'X-CSRF-TOKEN': "{{ csrf_token() }}",
-                        'Accept': 'application/json'
-                    }
-                });
-                if (res.ok) {
-                    Swal.fire('Terhapus!', '', 'success');
-                    fetchSpareparts(false);
-                }
-            }
-        };
-
-
-        window.toggleStatus = async function(id, element) {
-    const originalState = element.checked;
-
-    try {
-        const response = await fetch(`{{ url('sparepart/toggle-status') }}/${id}`, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': "{{ csrf_token() }}",
-                'Accept': 'application/json'
-            }
-        });
-
-        const result = await response.json();
-
-        if (response.ok && result.status === 'success') {
-            const Toast = Swal.mixin({
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 2000,
-                timerProgressBar: true
-            });
-            Toast.fire({
-                icon: 'success',
-                title: result.message
-            });
-        } else {
-            element.checked = !originalState; // Kembalikan posisi switch jika gagal
-            Swal.fire('Gagal', 'Gagal merubah status', 'error');
-        }
-    } catch (err) {
-        element.checked = !originalState;
-        Swal.fire('Error', 'Kesalahan koneksi server', 'error');
-    }
-};
-
+// ==========================
+// 1. API HELPER
+// ==========================
 const API = {
     get: async (url) => {
-        const response = await fetch(url, {
-            headers: {
-                'Accept': 'application/json'
-            }
+        const res = await fetch(url, {
+            headers: { 'Accept': 'application/json' }
         });
-
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-
-        return await response.json();
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
     }
 };
 
-        // 4. CORE FETCH DATA
-        async function fetchSpareparts(append = false) {
+// ==========================
+// 2. STATE
+// ==========================
+let state = {
+    currentPage: 1,
+    isLoading: false,
+    hasMoreData: true,
+    container: null,
+    scrollBox: null
+};
+
+// ==========================
+// 3. UTILS
+// ==========================
+const utils = {
+    formatRupiah: (val) => {
+        if (!val) return "0";
+        let clean = val.toString().replace(/\D/g, '');
+        return clean.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    },
+    showLoading: (show) => {
+        const el = document.getElementById('loading-state');
+        if (el) el.classList.toggle('d-none', !show);
+    }
+};
+
+// ==========================
+// 4. FETCH SPAREPART
+// ==========================
+async function fetchSpareparts(append = false) {
     if (state.isLoading || (append && !state.hasMoreData)) return;
 
     if (!append) {
@@ -644,9 +484,7 @@ const API = {
             sort_stok: document.getElementById('sort-stok')?.value || ''
         });
 
-        // 🔥 PENTING: pakai route() langsung (HTTPS aman)
-        const url = `{{ route('sparepart.get-data') }}?${params}`;
-
+        const url = `{{ route('sparepart.get-data') }}?${params.toString()}`;
         const result = await API.get(url);
 
         renderData(result.data || [], append, result.total || 0);
@@ -654,349 +492,113 @@ const API = {
         state.hasMoreData = !!result.next_page;
         if (state.hasMoreData) state.currentPage++;
 
-    } catch (error) {
-        console.error('Fetch Sparepart Error:', error);
-        alert('Gagal ambil data sparepart');
+    } catch (err) {
+        console.error("Fetch Sparepart Error:", err);
     } finally {
         state.isLoading = false;
         utils.showLoading(false);
     }
 }
 
+// ==========================
+// 5. FETCH LOW STOCK
+// ==========================
 async function fetchLowStock() {
     try {
-        const result = await API.get(`{{ route('sparepart.get-low-stock') }}`);
-        console.log(result);
-    } catch (error) {
-        console.error('Low Stock Error:', error);
+        const result = await API.get(`{{ route('sparepart.low-stock') }}`);
+        console.log("LOW STOCK:", result);
+    } catch (err) {
+        console.error("Low Stock Error:", err);
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    fetchSpareparts();
-    fetchLowStock(); // 🔥 ini dipanggil di sini
-});
+// ==========================
+// 6. RENDER DATA
+// ==========================
+function renderData(data, append = false, total = 0) {
+    if (!state.container) return;
 
-        // Tambahkan parameter totalFromServer di sini
-        function renderData(data, append = false, totalFromServer = 0) {
-            let html = '';
+    let html = '';
 
-            if (data.length === 0 && !append) {
-                state.container.innerHTML =
-                    '<tr><td colspan="7" class="text-center p-5 text-muted">Data tidak ditemukan</td></tr>';
+    if (data.length === 0 && !append) {
+        state.container.innerHTML =
+            '<tr><td colspan="7" class="text-center p-5 text-muted">Data tidak ditemukan</td></tr>';
+        return;
+    }
 
-                // Update teks jika kosong
-                const displayElement = document.getElementById('info-pencatatan');
-                if (displayElement) displayElement.innerHTML =
-                    `Menampilkan <strong>0</strong> dari <strong>0</strong> sparepart`;
-                return;
-            }
+    data.forEach((item, index) => {
+        const rowNo = append
+            ? state.container.querySelectorAll('tr').length + index + 1
+            : index + 1;
 
-            data.forEach((item, index) => {
-                const rowNo = append ? state.container.querySelectorAll('tr').length + index + 1 : index + 1;
-                const itemJson = encodeURIComponent(JSON.stringify(item));
-                const isLowStock = parseInt(item.stok) <= parseInt(item.stok_min);
-                const badgeClass = isLowStock ? 'bg-danger text-white' : 'bg-light text-dark border';
-                html += `
-            <tr>
-                <td class="text-center text-muted small">${rowNo}</td>
-                <td>
-                    <div class="fw-bold text-dark">${item.nama_part}</div>
-                    <div class="small text-muted">${item.kode_part} | <span class="text-primary">${(item.kategori || '').toUpperCase()}</span></div>
-                </td>
-                <td>Rp ${utils.formatRupiah(item.harga_beli)}</td>
-                <td class="text-primary fw-bold">Rp ${utils.formatRupiah(item.harga_jual)}</td>
-                <td class="text-center">${item.rak || '-'}</td>
-                <td class="text-center">
-                    <span class="badge ${badgeClass}" style="min-width: 30px;">${item.stok}</span>
-                    ${isLowStock ? `<div class="text-danger fw-bold" style="font-size: 9px; margin-top: 2px;">LIMIT: ${item.stok_min}</div>` : ''}
-                </td>
-                <td class="text-center">
-                    <div class="form-check form-switch d-flex justify-content-center">
-                        <input class="form-check-input status-switch" type="checkbox" ${item.status == 1 ? 'checked' : ''} onclick="toggleStatus(${item.id}, this)">
-                    </div>
-                </td>
-                <td class="text-center">
-                    <button class="btn btn-sm text-info" onclick="openMutasiModal(this)" data-item="${itemJson}"><i class="bi bi-box-seam"></i></button>
-                    <button class="btn btn-sm text-warning" onclick="prepEdit(this)" data-item="${itemJson}"><i class="bi bi-pencil"></i></button>
-                    <button class="btn btn-sm text-danger" onclick="deletePart(${item.id})"><i class="bi bi-trash"></i></button>
-                </td>
-            </tr>`;
-            });
+        html += `
+        <tr>
+            <td>${rowNo}</td>
+            <td>${item.nama_part}</td>
+            <td>Rp ${utils.formatRupiah(item.harga_beli)}</td>
+            <td>Rp ${utils.formatRupiah(item.harga_jual)}</td>
+            <td>${item.stok}</td>
+        </tr>`;
+    });
 
-            if (append) {
-                state.container.insertAdjacentHTML('beforeend', html);
-            } else {
-                state.container.innerHTML = html;
-            }
+    if (append) {
+        state.container.insertAdjacentHTML('beforeend', html);
+    } else {
+        state.container.innerHTML = html;
+    }
+}
 
-            // Hitung baris yang ada di tabel
-            const totalDiHalaman = state.container.querySelectorAll('tr').length;
+// ==========================
+// 7. DELETE
+// ==========================
+window.deletePart = async function(id) {
+    if (!confirm('Hapus data?')) return;
 
-            // Tembak langsung menggunakan total yang dikirim dari fetch tadi
-            const displayElement = document.getElementById('info-pencatatan');
-            if (displayElement) {
-                displayElement.innerHTML =
-                    `Menampilkan <strong>${totalDiHalaman}</strong> dari <strong>${totalFromServer}</strong> sparepart`;
-            }
-        }
-
-        // Fungsi pembantu untuk update teks di bawah tabel
-        function updateItemCount(current, total) {
-            const displayElement = document.querySelector('.card-footer .text-muted') ||
-                document.querySelector('div[class*="Menampilkan"]');
-
-            if (displayElement) {
-                displayElement.innerHTML =
-                    `Menampilkan <strong>${current}</strong> dari <strong>${total}</strong> sparepart`;
-            }
-        }
-
-        // 5. INITIALIZE & EVENTS
-        document.addEventListener('DOMContentLoaded', function() {
-            fetchSpareparts();
-
-
-
-            // Submit Form Sparepart (Tambah/Edit)
-            document.getElementById('formSparepart')?.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                const btn = this.querySelector('button[type="submit"]');
-                btn.disabled = true;
-
-                try {
-                    const response = await fetch("{{ route('sparepart.store') }}", {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRF-TOKEN': "{{ csrf_token() }}",
-                            'Accept': 'application/json'
-                        },
-                        body: new FormData(this)
-                    });
-                    const result = await response.json();
-                    if (response.ok && result.status === 'success') {
-                        bootstrap.Modal.getInstance(document.getElementById('modalSparepart')).hide();
-                        Swal.fire('Berhasil', result.message, 'success');
-                        fetchSpareparts(false);
-                    } else {
-                        Swal.fire('Gagal', result.message, 'error');
-                    }
-                } catch (err) {
-                    Swal.fire('Error', 'Kesalahan Sistem', 'error');
-                } finally {
-                    btn.disabled = false;
-                }
-            });
-
-            // Submit Form Mutasi
-            document.getElementById('formMutasi')?.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                const btn = this.querySelector('button[type="submit"]');
-                btn.disabled = true;
-                try {
-                    const response = await fetch("{{ route('sparepart.mutasi') }}", {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRF-TOKEN': "{{ csrf_token() }}",
-                            'Accept': 'application/json'
-                        },
-                        body: new FormData(this)
-                    });
-                    const result = await response.json();
-                    if (response.ok && result.status === 'success') {
-                        bootstrap.Modal.getInstance(document.getElementById('modalMutasi')).hide();
-                        this.reset();
-                        Swal.fire('Berhasil!', result.message, 'success');
-                        fetchSpareparts(false);
-                    } else {
-                        Swal.fire('Gagal', result.message, 'error');
-                    }
-                } catch (error) {
-                    Swal.fire('Error', 'Server Error', 'error');
-                } finally {
-                    btn.disabled = false;
-                }
-            });
-
-            // Infinite Scroll
-            state.scrollBox?.addEventListener('scroll', () => {
-                const isBottom = state.scrollBox.scrollTop + state.scrollBox.clientHeight >= state.scrollBox
-                    .scrollHeight - 50;
-                if (isBottom && !state.isLoading && state.hasMoreData) fetchSpareparts(true);
-            });
-
-            // Search & Filter dengan Debounce
-            let timer;
-            ['search-sparepart', 'filter-kategori', 'sort-stok'].forEach(id => {
-                document.getElementById(id)?.addEventListener('input', () => {
-                    clearTimeout(timer);
-                    timer = setTimeout(() => fetchSpareparts(false), 500);
-                });
-            });
-        });
-
-        // Formatting Rupiah & Uppercase (Global)
-        document.addEventListener('input', (e) => {
-            if (e.target.classList.contains('format-rupiah')) e.target.value = utils.formatRupiah(e.target.value);
-            if (['modal_nama_part', 'modal_kategori', 'modal_rak'].includes(e.target.id)) e.target.value = e.target
-                .value.toUpperCase();
-        });
-
-        // 1. Fungsi buka list stok menipis
-        window.openStokMenipis = async function() {
-            const listContainer = document.getElementById('list-stok-menipis');
-            listContainer.innerHTML =
-                '<div class="text-center p-3"><span class="spinner-border spinner-border-sm text-danger"></span></div>';
-
-            // Panggil modal list
-            const modalStok = new bootstrap.Modal(document.getElementById('modalStokMenipis'));
-            modalStok.show();
-
-            try {
-                const response = await fetch("{{ route('sparepart.get-low-stock') }}");
-                const data = await response.json();
-
-                let html = '';
-                data.forEach(item => {
-                    const itemJson = encodeURIComponent(JSON.stringify(item));
-                    html += `
-                <div class="stok-item d-flex justify-content-between align-items-center p-3 border-bottom">
-                    <div class="fw-bold small text-uppercase" style="max-width: 180px;">${item.nama_part}</div>
-                    <div class="d-flex align-items-center gap-4">
-                        <span class="badge bg-danger rounded-circle d-flex align-items-center justify-content-center"
-                              style="width: 25px; height: 25px; font-size: 11px;">${item.stok}</span>
-                        <button class="btn btn-outline-secondary rounded-circle p-0"
-                                style="width: 30px; height: 30px;"
-                                onclick="openQuickAdd('${itemJson}')">
-                            <i class="bi bi-plus"></i>
-                        </button>
-                    </div>
-                </div>`;
-                });
-                listContainer.innerHTML = html || '<div class="text-center p-4">Stok aman semua!</div>';
-            } catch (e) {
-                listContainer.innerHTML = '<div class="text-center p-3 text-danger">Error loading data.</div>';
-            }
-        };
-
-        // 2. Fungsi pindah ke modal tambah stok (Popup kecil)
-        window.openQuickAdd = function(itemJson) {
-            const item = JSON.parse(decodeURIComponent(itemJson));
-
-            // Tutup modal list dulu
-            const modalStokEl = document.getElementById('modalStokMenipis');
-            const modalStok = bootstrap.Modal.getInstance(modalStokEl);
-            if (modalStok) modalStok.hide();
-
-            // Isi data ke modal popup kecil
-            document.getElementById('simple-part-name').innerText = item.nama_part;
-            document.getElementById('simple-part-id').value = item.id;
-            document.getElementById('simple-jumlah').value = 1; // Default kasih 1
-
-            // Tunggu animasi tutup selesai (0.4 detik), baru buka modal baru
-            setTimeout(() => {
-                const modalAdd = new bootstrap.Modal(document.getElementById('modalTambahStokSimple'));
-                modalAdd.show();
-            }, 400);
-        };
-
-        // 3. Handle pengiriman data (Submit)
-        document.getElementById('formTambahStokSimple').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const id = document.getElementById('simple-part-id').value;
-            const jumlah = document.getElementById('simple-jumlah').value;
-
-            try {
-                const response = await fetch("{{ route('sparepart.tambah-stok') }}", {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    },
-                    body: JSON.stringify({
-                        id,
-                        jumlah
-                    })
-                });
-
-                const res = await response.json();
-                if (res.status === 'success') {
-                    // Tutup modal popup kecil
-                    bootstrap.Modal.getInstance(document.getElementById('modalTambahStokSimple')).hide();
-
-                    // Tampilkan SweetAlert dengan info detail seperti mutasi
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Stok Diperbarui',
-                        html: `Berhasil menambah <b>${res.jumlah_ditambah}</b> item untuk <b>${res.nama}</b>.<br>Total stok sekarang: <b>${res.stok_sekarang}</b>`,
-                        showConfirmButton: true,
-                        confirmButtonColor: '#3085d6'
-                    });
-
-                    fetchSpareparts(); // Refresh tabel utama agar angka stok berubah
-                }
-            } catch (err) {
-                Swal.fire('Gagal', 'Terjadi kesalahan saat memperbarui stok', 'error');
+    try {
+        await fetch(`{{ url('sparepart') }}/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': "{{ csrf_token() }}"
             }
         });
 
+        fetchSpareparts(false);
 
-        // DOM TOGGLE MOBILE RESPONSIF
+    } catch (err) {
+        console.error("Delete error:", err);
+    }
+};
 
+// ==========================
+// 8. INIT (HANYA SATU)
+// ==========================
 document.addEventListener('DOMContentLoaded', function () {
 
-    function hideSidebarToggle() {
-        document.body.classList.add('modal-sidebar-open');
+    state.container = document.getElementById('sparepart-container');
+    state.scrollBox = document.getElementById('scroll-container');
 
-        document.querySelectorAll(`
-            #sidebarToggle,
-            .sidebar-toggle,
-            .mobile-toggle,
-            .menu-toggle,
-            .navbar-toggler,
-            .btn-toggle,
-            .toggle-sidebar,
-            .hamburger,
-            .bi-list
-        `).forEach(el => {
-            if (el.closest('button')) {
-                el.closest('button').style.display = 'none';
-            } else {
-                el.style.display = 'none';
-            }
+    fetchSpareparts();
+    fetchLowStock();
+
+    // infinite scroll
+    state.scrollBox?.addEventListener('scroll', () => {
+        const bottom =
+            state.scrollBox.scrollTop + state.scrollBox.clientHeight >=
+            state.scrollBox.scrollHeight - 50;
+
+        if (bottom) fetchSpareparts(true);
+    });
+
+    // search debounce
+    let timer;
+    ['search-sparepart', 'filter-kategori', 'sort-stok'].forEach(id => {
+        document.getElementById(id)?.addEventListener('input', () => {
+            clearTimeout(timer);
+            timer = setTimeout(() => fetchSpareparts(false), 400);
         });
-    }
-
-    function showSidebarToggle() {
-        document.body.classList.remove('modal-sidebar-open');
-
-        document.querySelectorAll(`
-            #sidebarToggle,
-            .sidebar-toggle,
-            .mobile-toggle,
-            .menu-toggle,
-            .navbar-toggler,
-            .btn-toggle,
-            .toggle-sidebar,
-            .hamburger,
-            .bi-list
-        `).forEach(el => {
-            if (el.closest('button')) {
-                el.closest('button').style.display = '';
-            } else {
-                el.style.display = '';
-            }
-        });
-    }
-
-    document.querySelectorAll('.modal').forEach(modal => {
-        modal.addEventListener('show.bs.modal', hideSidebarToggle);
-        modal.addEventListener('hidden.bs.modal', showSidebarToggle);
     });
 
 });
 
-
-
-    </script>
+</script>
 @endpush

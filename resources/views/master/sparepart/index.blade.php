@@ -235,6 +235,26 @@ body.modal-sidebar-open .toggle-sidebar{
     display:none !important;
 }
 }
+@media (max-width:768px){
+
+    .modal-dialog{
+        margin: 10px !important;
+    }
+
+    .modal-content{
+        border-radius:14px !important;
+    }
+
+    .modal-body{
+        max-height: 65vh;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .modal-body{
+    padding-bottom:90px !important;
+}
+}
+
     </style>
     <div class="container-fluid px-4">
 
@@ -402,7 +422,10 @@ body.modal-sidebar-open .toggle-sidebar{
 
 @push('scripts')
     <script>
-
+document.addEventListener('DOMContentLoaded', () => {
+    fetchSpareparts();
+    fetchLowStock(); // 🔥 ini dipanggil di sini
+});
           document.addEventListener('DOMContentLoaded', function () {
 
     const toggleBtn =
@@ -590,39 +613,52 @@ body.modal-sidebar-open .toggle-sidebar{
 
         // 4. CORE FETCH DATA
         async function fetchSpareparts(append = false) {
-            if (state.isLoading || (append && !state.hasMoreData)) return;
-            if (!append) {
-                state.currentPage = 1;
-                state.hasMoreData = true;
-            }
+    if (state.isLoading || (append && !state.hasMoreData)) return;
 
-            state.isLoading = true;
-            utils.showLoading(true);
+    if (!append) {
+        state.currentPage = 1;
+        state.hasMoreData = true;
+    }
 
-            try {
-                const params = new URLSearchParams({
-                    page: state.currentPage,
-                    search: document.getElementById('search-sparepart')?.value || '',
-                    kategori: document.getElementById('filter-kategori')?.value || '',
-                    sort_stok: document.getElementById('sort-stok')?.value || ''
-                });
+    state.isLoading = true;
+    utils.showLoading(true);
 
-                const response = await fetch(`{{ route('sparepart.get-data') }}?${params.toString()}`);
-                const result = await response.json();
+    try {
+        const params = new URLSearchParams({
+            page: state.currentPage,
+            search: document.getElementById('search-sparepart')?.value || '',
+            kategori: document.getElementById('filter-kategori')?.value || '',
+            sort_stok: document.getElementById('sort-stok')?.value || ''
+        });
 
-                // Oper result.total (misal: 34) ke renderData
-                renderData(result.data || [], append, result.total || 0);
+        // 🔥 PENTING: pakai route() langsung (HTTPS aman)
+        const url = `{{ route('sparepart.get-data') }}?${params}`;
 
-                state.hasMoreData = !!result.next_page;
-                if (state.hasMoreData) state.currentPage++;
+        const result = await API.get(url);
 
-            } catch (error) {
-                console.error("Fetch Error:", error);
-            } finally {
-                state.isLoading = false;
-                utils.showLoading(false);
-            }
-        }
+        renderData(result.data || [], append, result.total || 0);
+
+        state.hasMoreData = !!result.next_page;
+        if (state.hasMoreData) state.currentPage++;
+
+    } catch (error) {
+        console.error('Fetch Sparepart Error:', error);
+        alert('Gagal ambil data sparepart');
+    } finally {
+        state.isLoading = false;
+        utils.showLoading(false);
+    }
+}
+
+async function fetchLowStock() {
+    try {
+        const result = await API.get(`{{ route('sparepart.get-low-stock') }}`);
+        console.log(result);
+    } catch (error) {
+        console.error('Low Stock Error:', error);
+    }
+}
+
 
         // Tambahkan parameter totalFromServer di sini
         function renderData(data, append = false, totalFromServer = 0) {

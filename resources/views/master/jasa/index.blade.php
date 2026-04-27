@@ -295,31 +295,37 @@ thead th {
 
     /** FETCH DATA **/
     async function fetchJasa(append = false) {
-        if (state.isLoading || (append && !state.hasMoreData)) return;
-        if (!append) { state.currentPage = 1; state.hasMoreData = true; }
+    if (state.isLoading || (append && !state.hasMoreData)) return;
 
-        state.isLoading = true;
-        document.getElementById('loading-state').classList.remove('d-none');
-
-        try {
-            const params = new URLSearchParams({
-                page: state.currentPage,
-                search: document.getElementById('search-jasa').value
-            });
-
-            const res = await fetch(`{{ route('jasa.get-data') }}?${params}`);
-            const result = await res.json();
-
-            renderData(result.data || [], append, result.total || 0);
-            state.hasMoreData = !!result.next_page_url;
-            if (state.hasMoreData) state.currentPage++;
-
-        } catch (e) { console.error(e); }
-        finally {
-            state.isLoading = false;
-            document.getElementById('loading-state').classList.add('d-none');
-        }
+    if (!append) {
+        state.currentPage = 1;
+        state.hasMoreData = true;
     }
+
+    state.isLoading = true;
+
+    try {
+        const params = new URLSearchParams({
+            page: state.currentPage,
+            search: document.getElementById('search-jasa')?.value || ''
+        });
+
+        const url = `{{ route('jasa.get-data') }}?${params}`;
+
+        const result = await API.get(url);
+
+        renderJasa(result.data || [], append);
+
+        state.hasMoreData = !!result.next_page;
+        if (state.hasMoreData) state.currentPage++;
+
+    } catch (error) {
+        console.error('Fetch Jasa Error:', error);
+        alert('Gagal ambil data jasa');
+    } finally {
+        state.isLoading = false;
+    }
+}
 
     /** RENDER DATA **/
     function renderData(data, append, total) {

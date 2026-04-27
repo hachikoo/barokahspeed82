@@ -505,7 +505,7 @@ async function fetchSpareparts(append = false) {
 // ==========================
 async function fetchLowStock() {
     try {
-        const result = await API.get(`{{ route('sparepart.low-stock') }}`);
+        const result = await API.get("/master/sparepart/low-stock");
         console.log("LOW STOCK:", result);
     } catch (err) {
         console.error("Low Stock Error:", err);

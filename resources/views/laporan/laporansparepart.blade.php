@@ -99,11 +99,11 @@ MOBILE
         margin:0 !important;
         width:100% !important;
         max-width:100% !important;
-        height:100vh;
+        height:80vh;
     }
 
     #modalDetail .modal-content{
-        height:100vh;
+        height:80vh;
         border-radius:0;
         display:flex;
         flex-direction:column;

@@ -164,11 +164,11 @@ MOBILE
         margin:0 !important;
         max-width:100% !important;
         width:100% !important;
-        height:100vh !important;
+        height:80vh !important;
     }
 
     #modalKonsumen .modal-content{
-        height:100vh !important;
+        height:80vh !important;
         border-radius:0 !important;
     }
 
@@ -185,11 +185,11 @@ MOBILE
         margin:0 !important;
         width:100% !important;
         max-width:100% !important;
-        height:100vh !important;
+        height:80vh !important;
     }
 
     #modalRiwayat .modal-content{
-        height:100vh !important;
+        height:80vh !important;
         border-radius:0 !important;
         display:flex;
         flex-direction:column;

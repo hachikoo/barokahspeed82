@@ -181,7 +181,7 @@ thead th {
     }
 
     .modal-content{
-        min-height:100vh;
+        min-height:80vh;
         border-radius:0 !important;
     }
 

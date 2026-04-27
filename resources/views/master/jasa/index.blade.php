@@ -307,7 +307,7 @@ thead th {
                 search: document.getElementById('search-jasa').value
             });
 
-            const res = await fetch(`${baseUrl}/master/jasa/get-data?page=${state.currentPage}&search=${search}`);
+            const res = await fetch(`{{ route('jasa.get-data') }}?${params}`);
             const result = await res.json();
 
             renderData(result.data || [], append, result.total || 0);
@@ -465,11 +465,6 @@ document.addEventListener('hidden.bs.modal', function () {
     if (toggleBtn) toggleBtn.style.display = '';
 });
 
-const BASE_URL = window.location.origin;
 
-function api(url, params = {}) {
-    const query = new URLSearchParams(params).toString();
-    return fetch(`${BASE_URL}${url}?${query}`);
-}
 </script>
 @endpush

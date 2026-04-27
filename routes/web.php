@@ -29,7 +29,7 @@ Route::get('/dashboard', [DashboardController::class, 'index']);
 Route::prefix('master/sparepart')->name('sparepart.')->group(function () {
     Route::get('/get-data', [SparepartController::class, 'getData'])->name('get-data');
     Route::get('/generate-code', [SparepartController::class, 'generateCode'])->name('generate-code');
-    Route::get('/low-stock', [SparepartController::class, 'getLowStock'])->name('low-stock');
+    Route::get('/low-stock', [SparepartController::class, 'getLowStock'])->name('get-low-stock');
 
     Route::post('/mutasi', [SparepartController::class, 'mutasiStok'])->name('mutasi');
 

@@ -431,11 +431,6 @@ thead th {
     document.getElementById('modal_nama_unit').addEventListener('input', function() {
         this.value = this.value.toUpperCase();
     });
-    const BASE_URL = window.location.origin;
 
-function api(url, params = {}) {
-    const query = new URLSearchParams(params).toString();
-    return fetch(`${BASE_URL}${url}?${query}`);
-}
 </script>
 @endpush
